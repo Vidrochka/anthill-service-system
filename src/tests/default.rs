@@ -1,10 +1,3 @@
-# anthill-service-system
-Rust runtime service system manager with di integration
-
-## Example
-
-```rust
-
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -14,10 +7,10 @@ use tokio::sync::RwLock;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
-use anthill_service_system::utils::SystemState;
-use anthill_service_system::{Service, ServiceSystemCofiguration};
-use anthill_service_system::ServiceSystemManager;
-use anthill_service_system::extensions::AddServiceExtension;
+use crate::utils::SystemState;
+use crate::{Service, ServiceSystemCofiguration};
+
+use crate::extensions::AddServiceExtension;
 
 struct TextWrapper1 {
     pub text: String
@@ -127,16 +120,8 @@ impl ServiceSystemCofiguration for TestConfiguration {
     }
 }
 
-
-fn main() {
-    let rt  = Runtime::new().unwrap();  
-
-    rt.block_on(async {
-        ServiceSystemManager::new(Box::new(TestConfiguration{})).await.unwrap().run().await.unwrap();
-    });
+#[tokio::test]
+async fn default() {
+    use crate::ServiceSystemManager;
+    ServiceSystemManager::new(Box::new(TestConfiguration{})).await.unwrap().run().await.unwrap();
 }
-
-```
-
-#### Refs:
- - [crate.io](https://crates.io/crates/anthill-service-system)

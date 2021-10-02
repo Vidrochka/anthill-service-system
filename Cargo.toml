@@ -1,0 +1,13 @@
+[package]
+name = "anthill-service-system"
+version = "0.1.0"
+authors = ["Vidrochka <Evgenuy1605@yandex.ru>"]
+edition = "2018"
+
+[dependencies]
+anthill-di = "*"
+async-trait = "*"
+log = "*"
+tokio = { version = "*", features = ["full"] }
+tokio-timer = "*"
+futures = "*"
