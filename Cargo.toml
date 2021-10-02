@@ -7,7 +7,7 @@ description = "Rust runtime service system manager with di integration"
 license = "MIT"
 homepage = "https://github.com/Vidrochka/anthill-service-system"
 repository = "https://github.com/Vidrochka/anthill-service-system"
-keywords = ["anthill", "service", "service-manager", "runtime", "manager", "system"]
+keywords = ["anthill", "service", "service-manager", "runtime", "manager"]
 
 [dependencies]
 anthill-di = "0.1.7"
