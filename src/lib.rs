@@ -1,17 +1,20 @@
-#![feature(type_name_of_val)]
-#![feature(unsize)]
+mod startup;
+pub use startup::*;
 
-mod service_system_configuration;
-pub use service_system_configuration::*;
+mod application_builder;
+pub use application_builder::*;
 
-mod service_system_manager;
-pub use service_system_manager::*;
+mod application;
+pub use application::*;
 
-pub mod service;
-pub use service::*;
 
+mod application_life_time;
+pub use application_life_time::*;
+
+pub mod configs;
 pub mod utils;
 pub mod extensions;
-pub mod error;
+pub mod service;
+pub mod types;
 
-pub mod tests;
+pub (crate) mod tests;

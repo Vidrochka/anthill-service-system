@@ -1,9 +1,3 @@
-# anthill-service-system
-Rust runtime service system manager with di integration
-
-## Example
-
-```rust
 use std::sync::Arc;
 
 use anthill_di::{
@@ -23,13 +17,11 @@ use tokio::{
     },
 };
 
-use anthill_service_system::{
-    ApplicationBuilder,
+use crate::{
     Startup,
     configs::CoreConfig,
     service::{
-        HostedServiceConstructor,
-        BackgroundService
+        HostedServiceConstructor, BackgroundService
     },
     ApplicationLifeTime,
     extensions::AddBackgroundServiceStrategy,
@@ -107,19 +99,13 @@ impl Startup for TestStartup {
     }
 }
 
-fn main() {
-    let rt  = Runtime::new().unwrap();  
-
-    rt.block_on(async {
-        ApplicationBuilder::new().await
-            .with_startup::<TestStartup>().await
-            .build().await
-            .run().await
-            .unwrap();
-    });
+#[tokio::test]
+async fn single_transient() {
+    use crate::ApplicationBuilder;
+    
+    ApplicationBuilder::new().await
+        .with_startup::<TestStartup>().await
+        .build().await
+        .run().await
+        .unwrap();
 }
-
-```
-
-#### Refs:
- - [crate.io](https://crates.io/crates/anthill-service-system)

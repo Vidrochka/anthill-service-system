@@ -1,6 +1,6 @@
 [package]
 name = "anthill-service-system"
-version = "0.1.1"
+version = "1.0.0"
 authors = ["Vidrochka <Evgenuy1605@yandex.ru>"]
 edition = "2018"
 description = "Rust runtime service system manager with di integration"
@@ -10,6 +10,7 @@ repository = "https://github.com/Vidrochka/anthill-service-system"
 keywords = ["anthill", "service", "service-manager", "runtime", "manager"]
 
 [dependencies]
-anthill-di = "0.1.7"
-async-trait = "0.1.51"
-tokio = { version = "1.12.0", features = ["full"] }
+anthill-di = "1.0.5"
+async-trait = "0.1.52"
+tokio = { version = "1.15.0", features = ["full"] }
+log = "0.4.14"
