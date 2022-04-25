@@ -10,7 +10,6 @@ use tokio::{
     sync::{
         RwLock,
         oneshot::{
-            self,
             Sender,
             Receiver,
         }
@@ -18,16 +17,7 @@ use tokio::{
     task::JoinHandle, time,
 };
 
-use crate::{
-    Startup,
-    configs::CoreConfig,
-    service::{
-        HostedService,
-        HostedServiceConstructor
-    },
-    ApplicationLifeTime,
-    extensions::AddHostedServiceStrategy,
-};
+use crate::{services::IBaseService, life_time::ILifeTimeManager};
 
 struct TestHostedService1 {
     task_handler: Option<JoinHandle<()>>,
@@ -35,17 +25,17 @@ struct TestHostedService1 {
 }
 
 #[async_trait]
-impl HostedServiceConstructor for TestHostedService1 {
-    async fn ctor(_application_life_time: Arc<RwLock<ApplicationLifeTime>>, ctx: DependencyContext) -> BuildDependencyResult<Self> {
+impl Constructor for TestHostedService1 {
+    async fn ctor(ctx: DependencyContext) -> BuildDependencyResult<Self> {
         Ok(Self {
             task_handler: None,
-            sender: Some(ctx.get_singleton::<Option<Sender<String>>>().await.unwrap().write().await.take().unwrap()),
+            sender: Some(ctx.resolve::<Arc<RwLock<Option<Sender<String>>>>>().await?.write().await.take().unwrap()),
         })
     }
 }
 
 #[async_trait]
-impl HostedService for TestHostedService1 {
+impl IBaseService for TestHostedService1 {
     async fn on_start(&mut self) {
         let sender = self.sender.take().unwrap();
         self.task_handler = Some(tokio::spawn(async move {
@@ -62,29 +52,29 @@ impl HostedService for TestHostedService1 {
 struct TestHostedService2 {
     task_handler: Option<JoinHandle<()>>,
     receiver: Option<Receiver<String>>,
-    application_life_time: Arc<RwLock<ApplicationLifeTime>>,
+    application_life_time: Arc<dyn ILifeTimeManager>,
 }
 
 #[async_trait]
-impl HostedServiceConstructor for TestHostedService2 {
-    async fn ctor(application_life_time: Arc<RwLock<ApplicationLifeTime>>, ctx: DependencyContext) -> BuildDependencyResult<Self> {
+impl Constructor for TestHostedService2 {
+    async fn ctor(ctx: DependencyContext) -> BuildDependencyResult<Self> {
         Ok(Self {
             task_handler: None,
-            receiver: Some(ctx.get_singleton::<Option<Receiver<String>>>().await.unwrap().write().await.take().unwrap()),
-            application_life_time,
+            receiver: Some(ctx.resolve::<Arc<RwLock<Option<Receiver<String>>>>>().await?.write().await.take().unwrap()),
+            application_life_time: ctx.resolve().await?,
         })
     }
 }
 
 #[async_trait]
-impl HostedService for TestHostedService2 {
+impl IBaseService for TestHostedService2 {
     async fn on_start(&mut self) {
         let receiver = self.receiver.take().unwrap();
         let lt = self.application_life_time.clone();
         self.task_handler = Some(tokio::spawn(async move {
             let receiver = receiver;
             assert_eq!("test".to_string(), receiver.await.unwrap());
-            lt.write().await.running.cancel().await;
+            lt.stop().await;
         }));
 
         time::sleep(Duration::from_millis(5100)).await;
@@ -104,39 +94,36 @@ impl Constructor for TestStartup {
     }
 }
 
-#[async_trait]
-impl Startup for TestStartup {
-    async fn configure_system(&mut self, _dependency_context: &mut DependencyContext, core_config: Arc<RwLock<CoreConfig>>) {
-        core_config.write().await.on_start_timeout = Duration::from_millis(5000);
-    }
-
-    async fn configure_dependency(&mut self, dependency_context: &mut DependencyContext) {
-        let (tx, rx) = oneshot::channel::<String>();
-
-        dependency_context.add_singleton_instance(Some(tx)).await.unwrap();
-        dependency_context.add_singleton_instance(Some(rx)).await.unwrap();
-
-        dependency_context.add_hosted_service::<TestHostedService1>().await;
-        dependency_context.add_hosted_service::<TestHostedService2>().await;
-    }
-}
-
 #[tokio::test]
-async fn single_transient() {
+async fn hosted_service_start_timeout() {
     use crate::{
-        ApplicationBuilder,
-        types::AppRunError
+        Application,
+        types::AppRunError,
+        life_time::InnerStateLifeTimeManager,
     };
-    use std::any::type_name;
+    use anthill_di::types::TypeInfo;
+    use tokio::{
+        sync::{
+            RwLock,
+            oneshot
+        },
+    };
 
-    let result = ApplicationBuilder::new().await
-        .with_startup::<TestStartup>().await
-        .build().await
-        .run().await;
+    let mut app = Application::new().await;
+
+    app.register_life_time_manager::<InnerStateLifeTimeManager>().await.unwrap();
+
+    let (tx, rx) = oneshot::channel::<String>();
+    app.root_ioc_context.register_instance(RwLock::new(Some(tx))).await.unwrap();
+    app.root_ioc_context.register_instance(RwLock::new(Some(rx))).await.unwrap();
+
+    app.register_service::<TestHostedService1>().await.unwrap();
+    app.register_service::<TestHostedService2>().await.unwrap();
+
+    let result = app.run().await;
 
     assert_eq!(result.err(), Some(AppRunError::ServiceStartTimeoutExpired {
         timeout_duration: Duration::from_millis(5000),
-        service_name: type_name::<TestHostedService2>().to_string(),
-        payload: "Hosted service".to_string(),
+        service_type_info: TypeInfo::from_type::<TestHostedService2>()
     }))
 }

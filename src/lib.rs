@@ -1,20 +1,13 @@
-mod startup;
-pub use startup::*;
-
-mod application_builder;
-pub use application_builder::*;
+pub mod configs;
+pub mod types;
+pub mod life_time;
+pub mod services;
 
 mod application;
 pub use application::*;
 
 
-mod application_life_time;
-pub use application_life_time::*;
-
-pub mod configs;
-pub mod utils;
-pub mod extensions;
-pub mod service;
-pub mod types;
+mod startup;
+pub use startup::*;
 
 pub (crate) mod tests;

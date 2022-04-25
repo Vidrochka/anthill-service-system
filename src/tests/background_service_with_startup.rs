@@ -1,3 +1,5 @@
+use crate::{configs::CoreConfig, Application};
+use crate::{IStartup, life_time::{ILifeTimeManager, InnerStateLifeTimeManager}};
 use std::sync::Arc;
 
 use anthill_di::{
@@ -6,6 +8,7 @@ use anthill_di::{
     types::BuildDependencyResult,
 };
 use async_trait::async_trait;
+use tokio::sync::oneshot;
 use tokio::{
     sync::{
         RwLock,
@@ -16,7 +19,7 @@ use tokio::{
     },
 };
 
-use crate::{services::IBackgroundService, life_time::ILifeTimeManager};
+use crate::services::{IBackgroundService, BackgroundService};
 
 struct TestBackgroundService1 {
     ctx: DependencyContext,
@@ -65,21 +68,37 @@ impl IBackgroundService for TestBackgroundService2 {
     }
 }
 
+struct TestStartup {}
+
+#[async_trait]
+impl Constructor for TestStartup {
+    async fn ctor(_ctx: DependencyContext) -> BuildDependencyResult<Self> {
+        Ok(Self {})
+    }
+}
+
+#[async_trait]
+impl IStartup for TestStartup {
+async fn configure_dependency(&mut self, root_ioc_context: &mut DependencyContext) {
+        let (tx, rx) = oneshot::channel::<String>();
+        
+        root_ioc_context.register_instance(RwLock::new(Some(tx))).await.unwrap();
+        root_ioc_context.register_instance(RwLock::new(Some(rx))).await.unwrap();
+    }
+
+    async fn configure_application(&mut self, _ : Arc<RwLock<CoreConfig>>, app: &mut Application) {
+        app.register_life_time_manager::<InnerStateLifeTimeManager>().await.unwrap();
+
+        app.register_service::<BackgroundService<TestBackgroundService1>>().await.unwrap();
+        app.register_service::<BackgroundService<TestBackgroundService2>>().await.unwrap();
+    }
+}
+
 #[tokio::test]
-async fn background_service() {
-    use tokio::sync::oneshot;
-    use crate::{life_time::InnerStateLifeTimeManager, Application, services::BackgroundService};
-
+async fn background_service_with_startup() {
     let mut app = Application::new().await;
-
-    app.register_life_time_manager::<InnerStateLifeTimeManager>().await.unwrap();
-    
-    let (tx, rx) = oneshot::channel::<String>();
-    app.root_ioc_context.register_instance(RwLock::new(Some(tx))).await.unwrap();
-    app.root_ioc_context.register_instance(RwLock::new(Some(rx))).await.unwrap();
-
-    app.register_service::<BackgroundService<TestBackgroundService1>>().await.unwrap();
-    app.register_service::<BackgroundService<TestBackgroundService2>>().await.unwrap();
+  
+    app.register_startup::<TestStartup>().await.unwrap();
     
     app.run().await.unwrap();
 }
