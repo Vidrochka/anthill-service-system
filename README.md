@@ -1,3 +1,5 @@
+[![build & tests](https://github.com/Vidrochka/anthill-service-system/actions/workflows/rust.yml/badge.svg)](https://github.com/Vidrochka/anthill-service-system/actions/workflows/rust.yml)
+
 # anthill-service-system
 Rust runtime service system manager with ```anthill-di``` integration
 
