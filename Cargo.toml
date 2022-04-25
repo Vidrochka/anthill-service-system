@@ -1,6 +1,6 @@
 [package]
 name = "anthill-service-system"
-version = "1.1.0"
+version = "1.1.1"
 authors = ["Vidrochka <Evgenuy1605@yandex.ru>"]
 edition = "2018"
 description = "Rust runtime service system manager with di integration"
@@ -14,13 +14,6 @@ anthill-di = "1.2.1"
 anthill-di-configuration-extension = "0.1.0"
 async-trait = "0.1.52"
 tokio = { version = "1.15.0", features = ["full"] }
-derive-new = "0.5.9"
 thiserror = "1.0.30"
-
-ctrlc = "3.2.1"
-
 log = "0.4.14"
-
-serde = { version = "1.0.133", features = ["derive"] }
-serde_derive = "1.0.133"
-serde_json = "1.0.74"
+ctrlc = "3.2.1"
