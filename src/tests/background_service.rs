@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use anthill_di::{
     DependencyContext,
-    Constructor,
-    types::BuildDependencyResult,
 };
-use async_trait::async_trait;
 use tokio::{
     sync::{
         RwLock,
@@ -18,18 +15,14 @@ use tokio::{
 
 use crate::{services::IBackgroundService, life_time::ILifeTimeManager};
 
+use anthill_di_derive::constructor;
+
+#[derive(constructor)]
 struct TestBackgroundService1 {
-    ctx: DependencyContext,
+    #[ioc_context] ctx: DependencyContext,
 }
 
-#[async_trait]
-impl Constructor for TestBackgroundService1 {
-    async fn ctor(ctx: DependencyContext) -> BuildDependencyResult<Self> {
-        Ok(Self { ctx })
-    }
-}
-
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl IBackgroundService for TestBackgroundService1 {
     async fn execute(&self) {
         let sender = self.ctx.resolve::<Arc<RwLock<Option<Sender<String>>>>>().await.unwrap()
@@ -39,24 +32,13 @@ impl IBackgroundService for TestBackgroundService1 {
     }
 }
 
+#[derive(constructor)]
 struct TestBackgroundService2 {
     application_life_time: Arc<dyn ILifeTimeManager>,
-    ctx: DependencyContext,
+    #[ioc_context] ctx: DependencyContext,
 }
 
-#[async_trait]
-impl Constructor for TestBackgroundService2 {
-    async fn ctor(ctx: DependencyContext) -> BuildDependencyResult<Self> {
-        let application_life_time = ctx.resolve().await?;
-
-        Ok(Self {
-            application_life_time,
-            ctx,
-        })
-    }
-}
-
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl IBackgroundService for TestBackgroundService2 {
     async fn execute(&self) {
         let receiver = self.ctx.resolve::<Arc<RwLock<Option<Receiver<String>>>>>().await.unwrap().write().await.take().unwrap();
@@ -70,7 +52,9 @@ async fn background_service() {
     use tokio::sync::oneshot;
     use crate::{life_time::InnerStateLifeTimeManager, Application, services::BackgroundService};
 
-    let mut app = Application::new().await;
+    let configuration_path = "background_service.json".to_string();
+
+    let mut app = Application::new(Some(configuration_path.clone())).await.unwrap();
 
     app.register_life_time_manager::<InnerStateLifeTimeManager>().await.unwrap();
     
@@ -82,4 +66,6 @@ async fn background_service() {
     app.register_service::<BackgroundService<TestBackgroundService2>>().await.unwrap();
     
     app.run().await.unwrap();
+
+    std::fs::remove_file(configuration_path).unwrap();
 }

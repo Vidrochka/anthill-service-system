@@ -1,11 +1,13 @@
 [![build & tests](https://github.com/Vidrochka/anthill-service-system/actions/workflows/rust.yml/badge.svg)](https://github.com/Vidrochka/anthill-service-system/actions/workflows/rust.yml)
 
 # anthill-service-system
-Rust runtime service system manager with ```anthill-di``` integration
+Rust runtime service system manager with [anthill-di](https://crates.io/crates/anthill-di) integration
+
+Minimal required version of [anthill-di](https://crates.io/crates/anthill-di) 1.2.3
 
 ## Warning
 
-Library required Rust nightly for ```anthill-di```
+Library required Rust nightly for [anthill-di](https://crates.io/crates/anthill-di)
 
 ---
 

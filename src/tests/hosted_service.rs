@@ -5,7 +5,6 @@ use anthill_di::{
     Constructor,
     types::BuildDependencyResult,
 };
-use async_trait::async_trait;
 use tokio::{
     sync::{
         RwLock,
@@ -27,7 +26,7 @@ struct TestHostedService1 {
     sender: Option<Sender<String>>,
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl Constructor for TestHostedService1 {
     async fn ctor(ctx: DependencyContext) -> BuildDependencyResult<Self> {
         Ok(Self {
@@ -38,7 +37,7 @@ impl Constructor for TestHostedService1 {
 }
     
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl IBaseService for TestHostedService1 {
     async fn on_start(&mut self) {
         let sender = self.sender.take().unwrap();
@@ -59,7 +58,7 @@ struct TestHostedService2 {
     application_life_time: Arc<dyn ILifeTimeManager>,
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl Constructor for TestHostedService2 {
     async fn ctor(ctx: DependencyContext) -> BuildDependencyResult<Self> {
         Ok(Self {
@@ -70,7 +69,7 @@ impl Constructor for TestHostedService2 {
     }
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl IBaseService for TestHostedService2 {
     async fn on_start(&mut self) {
         let receiver = self.receiver.take().unwrap();
@@ -92,7 +91,9 @@ async fn hosted_service() {
     use crate::{Application, life_time::InnerStateLifeTimeManager};
     use tokio::sync::oneshot;
 
-    let mut app = Application::new().await;
+    let configuration_path = "hosted_service.json".to_string();
+
+    let mut app = Application::new(Some(configuration_path.clone())).await.unwrap();
 
     app.register_life_time_manager::<InnerStateLifeTimeManager>().await.unwrap();
 
@@ -105,4 +106,6 @@ async fn hosted_service() {
     app.register_service::<TestHostedService2>().await.unwrap();
 
     app.run().await.unwrap();
+
+    std::fs::remove_file(configuration_path).unwrap();
 }

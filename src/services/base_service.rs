@@ -1,8 +1,6 @@
 use anthill_di::types::TypeInfo;
-use async_trait::async_trait;
 
-
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 pub trait IBaseService where Self: Sync + Send + 'static {
     async fn on_start(&mut self);
     async fn on_stop(&mut self);

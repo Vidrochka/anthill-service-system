@@ -3,14 +3,11 @@ use tokio::task::yield_now;
 use super::ILifeTimeManager;
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
 
-use async_trait::async_trait;
-
-
 pub struct CtrlCLifeTimeManager {
     is_running: Arc<AtomicBool>,
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl Constructor for CtrlCLifeTimeManager {
     async fn ctor(_: DependencyContext) -> BuildDependencyResult<Self> {
         let is_running = Arc::new(AtomicBool::new(true));
@@ -24,7 +21,7 @@ impl Constructor for CtrlCLifeTimeManager {
     }
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl ILifeTimeManager for CtrlCLifeTimeManager {
     async fn stop(&self) {
         self.is_running.store(false, Ordering::SeqCst)

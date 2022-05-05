@@ -1,19 +1,21 @@
 use std::time::Duration;
+use serde::{Deserialize, Serialize};
 
-use anthill_di::{Constructor, types::BuildDependencyResult, DependencyContext};
-use async_trait::async_trait;
-
+#[derive(Deserialize, Serialize)]
 pub struct CoreConfig {
+    #[serde(default = "default_timeout")]
     pub on_start_timeout: Duration,
+
+    #[serde(default = "default_timeout")]
     pub on_stop_timeout: Duration,
 }
 
-#[async_trait]
-impl Constructor for CoreConfig {
-    async fn ctor(_ctx: DependencyContext) -> BuildDependencyResult<Self> {
-        Ok(Self {
-            on_start_timeout: Duration::from_millis(5000),
-            on_stop_timeout: Duration::from_millis(5000),
-        })
-    }
+fn default_timeout() -> Duration {
+    Duration::from_millis(5000)
 }
+
+impl Default for CoreConfig {
+    fn default() -> Self {
+        Self { on_start_timeout: Duration::from_millis(5000), on_stop_timeout: Duration::from_millis(5000) }
+    }
+} 

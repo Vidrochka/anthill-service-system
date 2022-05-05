@@ -4,12 +4,11 @@ use std::sync::Arc;
 
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
-use async_trait::async_trait;
 
 use super::IBaseService;
 
 /// You cant create 'mut self' method, because while service work, execute call with read lock
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 pub trait IBackgroundService where Self: Send + Sync + 'static {
     async fn execute(&self);
 }
@@ -24,7 +23,7 @@ pub struct BackgroundService<TService> where TService: IBackgroundService + Cons
     state: BackgroundServiceState,
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl<TService> Constructor for BackgroundService<TService> where TService: IBackgroundService + Constructor {
     async fn ctor(ctx: DependencyContext) ->  BuildDependencyResult<Self> {
         ctx.register_type::<RwLock<TService>>(DependencyLifeCycle::Singleton).await
@@ -38,7 +37,7 @@ impl<TService> Constructor for BackgroundService<TService> where TService: IBack
     }
 }
 
-#[async_trait]
+#[async_trait_with_sync::async_trait(Sync)]
 impl<TService> IBaseService for BackgroundService<TService> where TService: IBackgroundService + Constructor {
     async fn on_start(&mut self) {
         let service_ref = self.service.clone();
